@@ -13,6 +13,14 @@
  $sm_password=$argv[2];
  $playlist_file=$argv[3];
 
+ function StructArraySearch(array &$a,$field,$value,$default_idx=FALSE)
+ {
+  foreach($a as $i => $v)
+   if ($v->{$field}==$value)
+    return $i;
+  return $default_idx;
+ }
+
  function CheckHttpCode($curl,$expected_code=200)
  {
     $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -47,19 +55,22 @@
   CheckHttpCode($curl);
   $json = json_decode($resp);
   if (!isset($json)) throw new Exception("bad channels json");
+
   fwrite($fplaylist,"#EXTM3U$eol");
-  foreach($json->{"channels"} as $ch)
+  foreach($json->channels as $ch)
   {
-   $info = $ch->{"info"};
-   if ($info->{"purchaseInfo"}->{"bought"})
+   $info = $ch->info;
+   if ($info->purchaseInfo->bought)
    {
-    $title = $info->{"metaInfo"}->{"title"};
-    curl_setopt ($curl, CURLOPT_URL, "https://fe.smotreshka.tv/playback-info/".$ch->{"id"});
+    $title = $info->metaInfo->title;
+    curl_setopt ($curl, CURLOPT_URL, "https://fe.smotreshka.tv/playback-info/".$ch->id);
     $resp = curl_exec($curl);
     CheckHttpCode($curl);
     $json2 = json_decode($resp);
     if (!isset($json2)) throw new Exception("bad playback-info json");
-    $url = $json2->{"languages"}[0]->{"renditions"}[0]->{"url"};
+    $lang = StructArraySearch($json2->languages,"id","ru-RU",0);
+    $rend = StructArraySearch($json2->languages[$lang]->renditions,"id","Auto",0);
+    $url = $json2->languages[$lang]->renditions[$rend]->url;
     fwrite($fplaylist,"#EXTINF:-1,$title$eol$url$eol");
    }
   }
