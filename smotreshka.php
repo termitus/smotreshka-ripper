@@ -6,12 +6,13 @@
 
  if ($argc<4)
  {
-  echo "smotreshka.php <email> <password> <playlist>\n";
+  echo "smotreshka.php <email> <password> <playlist_file> [all]\n";
   die();
  }
  $sm_email=$argv[1];
  $sm_password=$argv[2];
  $playlist_file=$argv[3];
+ $allq = ($argc>=5) && ($argv[4]=='all');
 
  function StructArraySearch(array &$a,$field,$value,$default_idx=FALSE)
  {
@@ -69,9 +70,21 @@
     $json2 = json_decode($resp);
     if (!isset($json2)) throw new Exception("bad playback-info json");
     $lang = StructArraySearch($json2->languages,"id","ru-RU",0);
-    $rend = StructArraySearch($json2->languages[$lang]->renditions,"id","Auto",0);
-    $url = $json2->languages[$lang]->renditions[$rend]->url;
-    fwrite($fplaylist,"#EXTINF:-1,$title$eol$url$eol");
+    if ($allq)
+    {
+     foreach ($json2->languages[$lang]->renditions as $r)
+     {
+      $url = $r->url;
+      $id = $r->id;
+      fwrite($fplaylist,"#EXTINF:-1,$title ($id)$eol$url$eol");
+     }
+    }
+    else
+    {
+     $rend = StructArraySearch($json2->languages[$lang]->renditions,"id","Auto",0);
+     $url = $json2->languages[$lang]->renditions[$rend]->url;
+     fwrite($fplaylist,"#EXTINF:-1,$title$eol$url$eol");
+    }
    }
   }
  }
