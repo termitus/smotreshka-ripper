@@ -6,13 +6,16 @@
 
  if ($argc<4)
  {
-  echo "smotreshka.php <email> <password> <playlist_file> [all]\n";
+  echo "smotreshka.php <email> <password> <playlist_file> [all|split|id]\n";
   die();
  }
  $sm_email=$argv[1];
  $sm_password=$argv[2];
  $playlist_file=$argv[3];
- $allq = ($argc>=5) && ($argv[4]=='all');
+ $playlist_basename = pathinfo($playlist_file, PATHINFO_DIRNAME);
+ if ($playlist_basename=='.') $playlist_basename="";
+ $playlist_basename .= pathinfo($playlist_file, PATHINFO_FILENAME);; 
+ $mode = ($argc>=5) ? $argv[4] : "Auto";
 
  function StructArraySearch(array &$a,$field,$value,$default_idx=FALSE)
  {
@@ -24,13 +27,29 @@
 
  function CheckHttpCode($curl,$expected_code=200)
  {
-    $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    if ($httpcode!=$expected_code) throw new Exception("http code $httpcode in ".curl_getinfo($curl,CURLINFO_EFFECTIVE_URL));
+  $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+  if ($httpcode!=$expected_code) throw new Exception("http code $httpcode in ".curl_getinfo($curl,CURLINFO_EFFECTIVE_URL));
  }
+
+ function create_m3u($fname)
+ {
+  global $eol;
+  $f=fopen($fname, "w");
+  if (!$f) throw new Exception("could not create $fname");
+  fwrite($f,"#EXTM3U$eol");
+  return $f;
+ }
+ function write_m3u_chn($file,$title,$url)
+ {
+  global $eol;
+  fwrite($file,"#EXTINF:-1,$title$eol$url$eol");
+ }
+
 
  $err=0;
  $curl = curl_init();
  $fplaylist = false;
+ $ids = array();
  try
  {
   curl_setopt_array($curl, array(
@@ -47,8 +66,6 @@
   curl_exec($curl);
   CheckHttpCode($curl);
 
-  $fplaylist=fopen($playlist_file, "w");
-  if (!$fplaylist) throw new Exception("could not create $playlist_file");
 
   curl_setopt ($curl, CURLOPT_POST, false);
   curl_setopt ($curl, CURLOPT_URL, "https://fe.smotreshka.tv/channels");
@@ -57,7 +74,7 @@
   $json = json_decode($resp);
   if (!isset($json)) throw new Exception("bad channels json");
 
-  fwrite($fplaylist,"#EXTM3U$eol");
+  $rends = array();
   foreach($json->channels as $ch)
   {
    $info = $ch->info;
@@ -70,23 +87,42 @@
     $json2 = json_decode($resp);
     if (!isset($json2)) throw new Exception("bad playback-info json");
     $lang = StructArraySearch($json2->languages,"id","ru-RU",0);
-    if ($allq)
+    array_push($rends,(object)array("title" => $title, "rend" => $json2->languages[$lang]->renditions));
+   }
+  }
+  if ($mode=='split')
+  {
+    foreach($rends as $rend)
+     foreach($rend->rend as $r)
+      if ($r->id) $ids[$r->id]=false;
+    foreach ($ids as $i=>$v)
+     $ids[$i]=create_m3u("$playlist_basename.$i.m3u");
+    foreach($rends as $rend)
     {
-     foreach ($json2->languages[$lang]->renditions as $r)
-     {
-      $url = $r->url;
-      $id = $r->id;
-      fwrite($fplaylist,"#EXTINF:-1,$title ($id)$eol$url$eol");
-     }
+     $title = $rend->title;
+     foreach($rend->rend as $r)
+      if ($r->id) write_m3u_chn($ids[$r->id],$rend->title,$r->url);
+    }
+  }
+  else
+  {
+   $fplaylist = create_m3u($playlist_file);
+   foreach($rends as $rend)
+   {
+    $title = $rend->title;
+    if ($mode=='all')
+    {
+     foreach ($rend->rend as $r)
+      write_m3u_chn($fplaylist,$rend->title." (".$r->id.")",$r->url);
     }
     else
     {
-     $rend = StructArraySearch($json2->languages[$lang]->renditions,"id","Auto",0);
-     $url = $json2->languages[$lang]->renditions[$rend]->url;
-     fwrite($fplaylist,"#EXTINF:-1,$title$eol$url$eol");
+     $rend_id = StructArraySearch($rend->rend,"id",$mode,-1);
+     if ($rend_id>=0) write_m3u_chn($fplaylist,$rend->title,$rend->rend[$rend_id]->url);
     }
    }
   }
+
  }
  catch (Exception $e)
  {
@@ -97,6 +133,9 @@
  {
   curl_close($curl);
   if ($fplaylist) fclose($fplaylist);
+  if ($ids)
+   foreach($ids as $f)
+    if ($f) fclose($f);
  }
  if ($err) die($err);
 ?>
