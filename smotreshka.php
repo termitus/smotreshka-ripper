@@ -20,7 +20,7 @@
  function StructArraySearch(array &$a,$field,$value,$default_idx=FALSE)
  {
   foreach($a as $i => $v)
-   if ($v->{$field}==$value)
+   if (strtolower($v->{$field})==strtolower($value))
     return $i;
   return $default_idx;
  }
@@ -94,14 +94,14 @@
   {
     foreach($rends as $rend)
      foreach($rend->rend as $r)
-      if ($r->id) $ids[$r->id]=false;
+      if ($r->id) $ids[strtolower($r->id)]=false;
     foreach ($ids as $i=>$v)
      $ids[$i]=create_m3u("$playlist_basename.$i.m3u");
     foreach($rends as $rend)
     {
      $title = $rend->title;
      foreach($rend->rend as $r)
-      if ($r->id) write_m3u_chn($ids[$r->id],$rend->title,$r->url);
+      if ($r->id) write_m3u_chn($ids[strtolower($r->id)],$rend->title,$r->url);
     }
   }
   else
@@ -113,7 +113,7 @@
     if ($mode=='all')
     {
      foreach ($rend->rend as $r)
-      write_m3u_chn($fplaylist,$rend->title." (".$r->id.")",$r->url);
+      write_m3u_chn($fplaylist,$rend->title." (".strtolower($r->id).")",$r->url);
     }
     else
     {
