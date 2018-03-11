@@ -99,11 +99,8 @@
     foreach ($ids as $i=>$v)
      $ids[$i]=create_m3u("$playlist_basename.$i.m3u");
     foreach($rends as $rend)
-    {
-     $title = $rend->title;
      foreach($rend->rend as $r)
       if ($r->id) write_m3u_chn($ids[strtolower($r->id)],$rend->title,$r->url);
-    }
   }
   else
   {
