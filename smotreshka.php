@@ -12,9 +12,6 @@
  $sm_email=$argv[1];
  $sm_password=$argv[2];
  $playlist_file=$argv[3];
- $playlist_basename = pathinfo($playlist_file, PATHINFO_DIRNAME);
- if ($playlist_basename=='.') $playlist_basename="";
- $playlist_basename .= pathinfo($playlist_file, PATHINFO_FILENAME);; 
  $mode = ($argc>=5) ? $argv[4] : "Auto";
 
  function StructArraySearch(array &$a,$field,$value,$default_idx=FALSE)
@@ -92,6 +89,10 @@
   }
   if ($mode=='split')
   {
+    $playlist_basename = pathinfo($playlist_file, PATHINFO_DIRNAME);
+    if ($playlist_basename=='.') $playlist_basename="";
+    $playlist_basename .= pathinfo($playlist_file, PATHINFO_FILENAME);; 
+
     foreach($rends as $rend)
      foreach($rend->rend as $r)
       if ($r->id) $ids[strtolower($r->id)]=false;
@@ -109,7 +110,6 @@
    $fplaylist = create_m3u($playlist_file);
    foreach($rends as $rend)
    {
-    $title = $rend->title;
     if ($mode=='all')
     {
      foreach ($rend->rend as $r)
