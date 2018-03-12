@@ -6,7 +6,7 @@
 
  if ($argc<4)
  {
-  echo "smotreshka.php <email> <password> <playlist_file> [all|split|id]\n";
+  echo "smotreshka.php <email> <password> <playlist_file> [all|split|id|selectmax]\n";
   die();
  }
  $sm_email=$argv[1];
@@ -20,6 +20,21 @@
    if (strtolower($v->{$field})==strtolower($value))
     return $i;
   return $default_idx;
+ }
+ function SearchMaxQualityId(array &$a)
+ {
+  $maxq_id=0;
+  $maxq=0;
+  foreach($a as $i => $v)
+  {
+   $q = floatval($v->id);
+   if ($q>$maxq)
+   {
+    $maxq_id=$i;
+    $maxq=$q;
+   }
+  }
+  return $maxq_id;
  }
 
  function CheckHttpCode($curl,$expected_code=200)
@@ -91,7 +106,7 @@
   {
     $playlist_basename = pathinfo($playlist_file, PATHINFO_DIRNAME);
     if ($playlist_basename=='.') $playlist_basename="";
-    $playlist_basename .= pathinfo($playlist_file, PATHINFO_FILENAME);; 
+    $playlist_basename .= pathinfo($playlist_file, PATHINFO_FILENAME);
 
     foreach($rends as $rend)
      foreach($rend->rend as $r)
@@ -111,6 +126,11 @@
     {
      foreach ($rend->rend as $r)
       write_m3u_chn($fplaylist,$rend->title." (".strtolower($r->id).")",$r->url);
+    }
+    else if ($mode=='selectmax')
+    {
+     $rend_id = SearchMaxQualityId($rend->rend);
+     if ($rend_id>=0) write_m3u_chn($fplaylist,$rend->title." (".$rend->rend[$rend_id]->id.")",$rend->rend[$rend_id]->url);
     }
     else
     {

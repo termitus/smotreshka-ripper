@@ -3,7 +3,7 @@
 Для установки на windows нужно:
 - скачать PHP и распаковать куда-нибудь
 - переписать php.ini-development в php.ini
-- раскоментировать в php.ini строки "extension=php_curl.dll" и extension_dir = "ext"
+- раскоментировать в php.ini строки "extension=php_curl.dll" ("extension=curl" в php 7.2 и выше) и extension_dir = "ext"
 - в play.cmd внести свои email и password от смотрешки, поправить пути к vlc и php
 Плейлисты генерятся привязанными к вашему IP адресу и действуют в течение суток. Возможно использование на других провайдерах, не обязательно на вашем.
 Если у вас есть что-то linux-овое в вашей сети, то можно повесить создание плейлиста в cron раз в сутки и брать его на все остальные устройства по http через установленный там же любой веб сервер или через samba.
@@ -11,10 +11,11 @@
 
 Параметры вызова скрипта smotreshka.php:
 
- smotreshka.php <email> <password> <playlist_file> [all|split|id]
+ smotreshka.php <email> <password> <playlist_file> [all|split|id|selectmax]
 
 email,password - ваша учетка от смотрешки
 playlist_file - имя файла плейлиста
 id - идентификатор стрима. при неуказании параметра - "Auto"
 all - записать в плейлист все версии стрима. названия в формате title (stream_id)
 split - записать несколько плейлистов по одному на stream_id. имя файлов <playlist_file_without_extension>.<stream_id>.m3u. в плейлист попадают только каналы, у которых есть этот stream_id.
+selectmax - парсер сам выбирает максимальное качество. таковым считается id с наибольшим числом до буквы "m". например, если есть 0.3m,0.5m,1m,2m то будет выбрано 2m
