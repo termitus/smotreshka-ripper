@@ -54,6 +54,7 @@
  function write_m3u_chn($file,$title,$url)
  {
   global $eol;
+  $title = ltrim($title,"0..9_");
   fwrite($file,"#EXTINF:-1,$title$eol$url$eol");
  }
 
@@ -130,7 +131,7 @@
     else if ($mode=='selectmax')
     {
      $rend_id = SearchMaxQualityId($rend->rend);
-     if ($rend_id>=0) write_m3u_chn($fplaylist,$rend->title." (".$rend->rend[$rend_id]->id.")",$rend->rend[$rend_id]->url);
+     if ($rend_id>=0) write_m3u_chn($fplaylist,$rend->title,$rend->rend[$rend_id]->url);
     }
     else
     {
